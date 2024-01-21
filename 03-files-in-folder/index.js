@@ -14,7 +14,9 @@ fs.readdir(pathToFile, (err, files) => {
         }
         if (stats.isFile()) {
           const arr = file.split('.');
-          const result = `${arr[0]} - ${arr[1]} - ${stats.size / 1000}kb`;
+          const result = `${arr[0]} - ${path.extname(file).slice(1)} - ${
+            stats.size / 1000
+          }kb`;
           console.log(result);
         }
       });

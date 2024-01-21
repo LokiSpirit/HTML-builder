@@ -12,7 +12,8 @@ async function mergeStyles() {
     const fullText = [];
     const styles = await fsPromise.readdir(pathToStyles);
     for (let item = 0; item < styles.length; item += 1) {
-      if (path.extname(styles[item]) === '.css') {
+      let stat = await fsPromise.lstat(path.join(pathToStyles, styles[item]));
+      if (stat.isFile() && path.extname(styles[item]) === '.css') {
         await readFile(styles[item], fullText);
       }
     }

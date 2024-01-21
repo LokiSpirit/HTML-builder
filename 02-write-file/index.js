@@ -1,10 +1,19 @@
 const path = require('path');
 const fs = require('fs');
+const process = require('process');
 const readline = require('readline');
 const pathJoined = path.join(__dirname, 'text.txt');
 const streamWrite = fs.createWriteStream(pathJoined, {
   encoding: 'utf-8',
 });
+
+const endProgram = () => {
+  streamWrite.end();
+  streamWrite.on('finish', () => {
+    console.log(`\nCheck the text in the ${pathJoined}`);
+  });
+  setTimeout(() => process.exit(0), 100);
+}
 streamWrite.on('error', (e) => {
   console.log(`Something goes wrong: ${e.message}`);
 });
@@ -29,10 +38,8 @@ cli
         break;
     }
   })
-  .on('close', () => {
-    streamWrite.end();
-    streamWrite.on('finish', () => {
-      console.log(`\nCheck the text in the ${pathJoined}`);
-    })
-});
+  .on('close', endProgram);
 
+process.on('SIGINT', () => {
+  endProgram();
+});

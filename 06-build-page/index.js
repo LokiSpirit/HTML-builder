@@ -5,51 +5,42 @@ const path = require('path');
 const pathToDistFolder = path.join(__dirname, 'project-dist');
 const pathToComponents = path.join(__dirname, 'components');
 
-async function createFolder(pathToFolder) {
-  await fsPromise.mkdir(pathToFolder, { recursive: true });
-}
+/* Copy assets */
+const pathCopyFrom = path.join(__dirname, 'assets');
+const pathToCopy = path.join(pathToDistFolder, 'assets');
 
-function readComponentsFileNames() {
-  return new Promise((resolve, reject) => {
-    const contentOfComponents = {};
-    fs.readdir(pathToComponents, (err, files) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      files.forEach((file) => {
-        const readStream = fs.createReadStream(
-          path.join(pathToComponents, file),
-          {
-            encoding: 'utf-8',
-          });
-        let fullText = '';
-        readStream.on('data', (data) => (fullText += data));
-        readStream.on('end', () => {
-          contentOfComponents[file.split('.')[0]] = fullText;
-          readStream.close((e) => reject(e));
-        });
-        readStream.on('error', (e) => reject(error));
+async function copyDir() {
+  try {
+    await fsPromise.mkdir(pathToCopy, { recursive: true });
+    const files = await fsPromise.readdir(pathToCopy);
+    files.forEach((file) => {
+      fs.unlink(path.join(pathToCopy, file), (err) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
       });
-      resolve(contentOfComponents);
-    })
-  })
-}
-
-function substitudeTemplate(text, components) {
-  const componentsArray = Object.entries(components);
-  let textOfTemplate = text;
-  for (let i = 0; i < componentsArray.length; i += 1) {
-    textOfTemplate = textOfTemplate.replaceAll(
-      `{{${componentsArray[i][0]}}}`,
-      componentsArray[i][1],
-    );
+    });
+    const filesRead = await fsPromise.readdir(pathCopyFrom);
+    filesRead.forEach((file) => {
+      fs.copyFile(
+        path.join(pathCopyFrom, file),
+        path.join(pathToCopy, file),
+        (err) => {
+          if (err) {
+            console.log('Error was found: ', err);
+          }
+        });
+    });
+  } catch (e) {
+    console.log(e);
   }
-  return textOfTemplate;
 }
+copyDir();
+
 /* Merge styles */
 const pathToStyles = path.join(__dirname, 'styles');
-const distFile = path.join(__dirname, 'project-dist', 'bundle.css')
+const distFile = path.join(pathToDistFolder, 'style.css')
 const writeStream = fs.createWriteStream(distFile, {
   encoding: 'utf-8',
 });
@@ -95,6 +86,49 @@ async function fillBundle(arr){
 mergeStyles();
 
 /* Create index.html */
+async function createFolder(pathToFolder) {
+  await fsPromise.mkdir(pathToFolder, { recursive: true });
+}
+
+function readComponentsFileNames() {
+  return new Promise((resolve, reject) => {
+    const contentOfComponents = {};
+    fs.readdir(pathToComponents, (err, files) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      files.forEach((file) => {
+        const readStream = fs.createReadStream(
+          path.join(pathToComponents, file),
+          {
+            encoding: 'utf-8',
+          });
+        let fullText = '';
+        readStream.on('data', (data) => (fullText += data));
+        readStream.on('end', () => {
+          contentOfComponents[file.split('.')[0]] = fullText;
+          readStream.close((e) => reject(e));
+        });
+        readStream.on('error', (e) => reject(error));
+      });
+      resolve(contentOfComponents);
+    })
+  })
+}
+
+function substitudeTemplate(text, components) {
+  const componentsArray = Object.entries(components);
+  let textOfTemplate = text;
+  for (let i = 0; i < componentsArray.length; i += 1) {
+    textOfTemplate = textOfTemplate.replaceAll(
+      `{{${componentsArray[i][0]}}}`,
+      componentsArray[i][1],
+    );
+  }
+  return textOfTemplate;
+}
+
 createFolder(pathToDistFolder)
   .then(() => {
     return readComponentsFileNames();

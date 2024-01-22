@@ -9,34 +9,43 @@ const pathToComponents = path.join(__dirname, 'components');
 const pathCopyFrom = path.join(__dirname, 'assets');
 const pathToCopy = path.join(pathToDistFolder, 'assets');
 
+async function clearAssetsFolder(dir) {
+  const files = await fsPromise.readdir(dir);
+  //Remove dirs and files from assets
+  for (let item = 0; item < files.length; item += 1) {
+    let p = path.join(pathToCopy, files[item]);
+    let stat = await fsPromise.lstat(p);
+    if (stat.isDirectory()) {
+      await fsPromise.rm(p, { recursive: true });
+    } else {
+      await fsPromise.unlink(p);
+    }
+  }
+}
+
+async function copyRecursively(dir) {
+  const filesRead = await fsPromise.readdir(dir);
+  filesRead.forEach(async (file) => {
+    let p = path.join(dir, file);
+    let pCopy = path.join(pathToDistFolder, p.slice(p.indexOf('assets')));
+    let stat = await fsPromise.lstat(p);
+    if (stat.isDirectory()) {
+      await fsPromise.mkdir(pCopy, { recursive: true });
+      await copyRecursively(p);
+    } else {
+      await fsPromise.copyFile(p, pCopy);
+    }
+  });
+}
 async function copyDir() {
   try {
     await fsPromise.mkdir(pathToCopy, { recursive: true });
-    const files = await fsPromise.readdir(pathToCopy);
-    files.forEach((file) => {
-      fs.unlink(path.join(pathToCopy, file), (err) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
-      });
-    });
-    const filesRead = await fsPromise.readdir(pathCopyFrom);
-    filesRead.forEach((file) => {
-      fs.copyFile(
-        path.join(pathCopyFrom, file),
-        path.join(pathToCopy, file),
-        (err) => {
-          if (err) {
-            console.log('Error was found: ', err);
-          }
-        });
-    });
+    await clearAssetsFolder(pathToCopy);
+    await copyRecursively(pathCopyFrom);
   } catch (e) {
     console.log(e);
   }
 }
-copyDir();
 
 /* Merge styles */
 const pathToStyles = path.join(__dirname, 'styles');
@@ -83,7 +92,6 @@ async function fillBundle(arr){
     }
   }
 }
-mergeStyles();
 
 /* Create index.html */
 async function createFolder(pathToFolder) {
@@ -155,4 +163,10 @@ createFolder(pathToDistFolder)
     writeStream.write(text);
     writeStream.end();
     writeStream.on('finish', () => writeStream.close()); */
+  })
+  .then(() => {
+    copyDir();
+  })
+  .then(() => {
+    mergeStyles();
   }).catch((err) => console.log(`You have got an error: ${err.message}`))

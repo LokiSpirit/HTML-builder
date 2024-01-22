@@ -12,7 +12,7 @@ const endProgram = () => {
   streamWrite.on('finish', () => {
     console.log(`\nCheck the text in the ${pathJoined}`);
   });
-  setTimeout(() => process.exit(0), 100);
+  process.exit(0);
 }
 streamWrite.on('error', (e) => {
   console.log(`Something goes wrong: ${e.message}`);

@@ -7,11 +7,11 @@ const streamWrite = fs.createWriteStream(pathJoined, {
   encoding: 'utf-8',
 });
 
-const endProgram = () => {
+const endProgram = async () => {
   streamWrite.end();
-  streamWrite.on('finish', () => {
+/*   streamWrite.on('finish', () => {
     console.log(`\nCheck the text in the ${pathJoined}`);
-  });
+  }); */
   process.exit(0);
 }
 streamWrite.on('error', (e) => {
@@ -30,6 +30,7 @@ cli
     const lineTrimmed = line.trim();
     switch (lineTrimmed) {
       case 'exit':
+        /* console.log(`\nCheck the text in the ${pathJoined}`); */
         cli.close();
         break;
       default:
@@ -38,8 +39,12 @@ cli
         break;
     }
   })
-  .on('close', endProgram);
+  .on('close', () => {
+    console.log(`\nCheck the text in the ${pathJoined}`);
+    endProgram()
+  });
 
-process.on('SIGINT', () => {
+/* process.on('SIGINT', () => {
   endProgram();
 });
+ */
